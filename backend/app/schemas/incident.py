@@ -37,6 +37,12 @@ class IncidentUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class IncidentCreate(BaseModel):
+    suspected_plate: str
+    notes: Optional[str] = None
+    incident_type: Optional[Literal["suspected_collision", "suspected_hit_and_run"]] = "suspected_hit_and_run"
+
+
 class PaginatedIncidentResponse(BaseModel):
     total: int
     limit: int

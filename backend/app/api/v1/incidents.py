@@ -6,11 +6,13 @@ from app.core.security import verify_service_token
 
 from app.db.session import get_db
 from app.schemas.incident import (
+    IncidentCreate,
     IncidentDetailResponse,
     IncidentUpdate,
     PaginatedIncidentResponse,
 )
 from app.services.incident_service import (
+    create_manual_case,
     get_incident_detail,
     list_incidents,
     review_incident,
@@ -42,6 +44,14 @@ def get_incident_detail_endpoint(incident_id: UUID, db: Session = Depends(get_db
     if not detail:
         raise HTTPException(status_code=404, detail="Incident not found")
     return detail
+
+
+@router.post("/incidents", response_model=IncidentDetailResponse, status_code=201)
+def create_incident_endpoint(
+    payload: IncidentCreate,
+    db: Session = Depends(get_db),
+):
+    return create_manual_case(db, payload)
 
 
 @router.patch(

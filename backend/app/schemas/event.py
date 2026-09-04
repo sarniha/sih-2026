@@ -87,16 +87,16 @@ class EventResponse(BaseModel):
     created_at: datetime
     severity: Optional[str] = None
     status: str
+    camera_id: Optional[UUID] = None
+    object_id: Optional[str] = None
+    plate_text: Optional[str] = None
+    plate_confidence: Optional[float] = None
+    evidence_url: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
 class EventDetailResponse(EventResponse):
-    camera_id: Optional[UUID] = None
-    object_id: Optional[str] = None
     bbox: Optional[dict] = None
-    plate_text: Optional[str] = None
-    plate_confidence: Optional[float] = None
-    evidence_url: Optional[str] = None
     metadata_: Optional[dict] = None
 
 

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional, Tuple
 from uuid import UUID
 from sqlalchemy.orm import Session
@@ -14,6 +15,7 @@ from app.repositories.incident_repository import (
     update_incident,
 )
 from app.schemas.incident import (
+    IncidentCreate,
     IncidentDetailResponse,
     IncidentEvidenceResponse,
     IncidentResponse,
@@ -132,7 +134,7 @@ def evaluate_and_spawn_incident(db: Session, event: Event) -> Optional[Incident]
         detail_resp = _incident_to_detail_response(saved_incident)
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(ws_manager.broadcast_incident(detail_resp.model_dump()))
+            asyncio.run_coroutine_threadsafe(ws_manager.broadcast_incident(detail_resp.model_dump()), loop)
     except Exception:
         pass
 
@@ -177,3 +179,105 @@ def review_incident(
         incident = update_incident(db, incident, updates)
 
     return _incident_to_detail_response(incident)
+
+
+def create_manual_case(db: Session, payload: IncidentCreate) -> IncidentDetailResponse:
+    plate_clean = payload.suspected_plate.strip().upper()
+    existing_event = (
+        db.query(Event)
+        .filter(Event.plate_text.ilike(f"%{plate_clean}%"))
+        .order_by(Event.occurred_at.desc())
+        .first()
+    )
+
+    if existing_event:
+        primary_event_id = existing_event.id
+        loc = existing_event.location
+        occurred_at = existing_event.occurred_at
+        plate_conf = float(existing_event.plate_confidence) if existing_event.plate_confidence is not None else 1.0
+    else:
+        from app.models.bus import Bus
+        from app.models.trip import Trip
+
+        bus = db.query(Bus).first()
+        if not bus:
+            bus = Bus(name="Patna City Transit - Bus 101", registration_number="BR01P1001")
+            db.add(bus)
+            db.commit()
+            db.refresh(bus)
+
+        trip = db.query(Trip).filter(Trip.bus_id == bus.id, Trip.is_active == True).first()
+        if not trip:
+            trip = Trip(bus_id=bus.id, is_active=True, started_at=datetime.now(timezone.utc))
+            db.add(trip)
+            db.commit()
+            db.refresh(trip)
+
+        new_ev = Event(
+            event_type="hit_run" if payload.incident_type == "suspected_hit_and_run" else "anpr",
+            trip_id=trip.id,
+            bus_id=bus.id,
+            confidence=1.0,
+            plate_text=plate_clean,
+            occurred_at=datetime.now(timezone.utc),
+            severity="high",
+            status="reviewed",
+        )
+        db.add(new_ev)
+        db.commit()
+        db.refresh(new_ev)
+
+        primary_event_id = new_ev.id
+        loc = None
+        occurred_at = new_ev.occurred_at
+        plate_conf = 1.0
+
+    incident = Incident(
+        primary_event_id=primary_event_id,
+        incident_type=payload.incident_type or "suspected_hit_and_run",
+        status="open",
+        suspected_plate=plate_clean,
+        suspected_plate_confidence=plate_conf,
+        location=loc,
+        occurred_at=occurred_at,
+        notes=payload.notes,
+    )
+    saved = create_incident(db, incident)
+
+    if existing_event and existing_event.evidence_url:
+        create_incident_evidence(
+            db,
+            IncidentEvidence(
+                incident_id=saved.id,
+                evidence_type="image",
+                url=existing_event.evidence_url,
+                captured_at=existing_event.occurred_at,
+            ),
+        )
+    elif existing_event:
+        crop_url = generate_sample_evidence("plate_crop", existing_event.object_id)
+        create_incident_evidence(
+            db,
+            IncidentEvidence(
+                incident_id=saved.id,
+                evidence_type="plate_crop",
+                url=crop_url,
+                captured_at=existing_event.occurred_at,
+            ),
+        )
+
+    detail = _incident_to_detail_response(saved)
+    try:
+        import asyncio
+        from app.services.websocket_manager import ws_manager
+
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.run_coroutine_threadsafe(
+                ws_manager.broadcast_incident(detail.model_dump()), loop
+            )
+    except Exception:
+        pass
+
+    return detail
+

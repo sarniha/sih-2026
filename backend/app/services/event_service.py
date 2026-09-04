@@ -117,7 +117,7 @@ def ingest_event(db: Session, payload: EventCreate) -> EventResponse:
         from app.services.websocket_manager import ws_manager
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(ws_manager.broadcast_event(response.model_dump()))
+            asyncio.run_coroutine_threadsafe(ws_manager.broadcast_event(response.model_dump()), loop)
     except Exception:
         pass
 
@@ -150,6 +150,11 @@ def _event_to_response(event: Event, fallback_lon: Optional[float] = None, fallb
         created_at=event.created_at,
         severity=event.severity,
         status=event.status,
+        camera_id=event.camera_id,
+        object_id=event.object_id,
+        plate_text=event.plate_text,
+        plate_confidence=float(event.plate_confidence) if event.plate_confidence is not None else None,
+        evidence_url=event.evidence_url,
     )
 
 
