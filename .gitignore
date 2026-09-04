@@ -11,6 +11,10 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 *.egg-info/
+*.mp4
+*.pt
+__pycache__/
+*.pyc
 
 # Virtual environment
 venv/
