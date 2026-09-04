@@ -59,6 +59,7 @@ def ingest_event(db: Session, payload: EventCreate) -> EventResponse:
                 "plate_text": data.get("plate_text") or existing.plate_text,
                 "plate_confidence": data.get("plate_confidence") or existing.plate_confidence,
                 "evidence_url": data.get("evidence_url") or existing.evidence_url,
+                "metadata_": data.get("metadata") or existing.metadata_,
             }
             existing = update_event(db, existing, updates)
 
@@ -100,6 +101,7 @@ def ingest_event(db: Session, payload: EventCreate) -> EventResponse:
         plate_text=data.get("plate_text"),
         plate_confidence=data.get("plate_confidence"),
         evidence_url=data.get("evidence_url"),
+        metadata_=data.get("metadata"),
     )
 
     saved = create_event(db, event)
