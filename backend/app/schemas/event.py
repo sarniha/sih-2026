@@ -16,6 +16,7 @@ class EventBase(BaseModel):
     occurred_at: datetime
     severity: Optional[Literal["low", "medium", "high"]] = None
     evidence_url: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
     @field_validator("lon")
     @classmethod

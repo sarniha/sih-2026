@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from fastapi import WebSocket
 
 
@@ -10,9 +10,11 @@ class ConnectionManager:
     def __init__(self):
         self.event_connections: List[WebSocket] = []
         self.incident_connections: List[WebSocket] = []
+        self.loop: Optional[asyncio.AbstractEventLoop] = None
 
     async def connect_event(self, websocket: WebSocket):
         await websocket.accept()
+        self.loop = asyncio.get_running_loop()
         self.event_connections.append(websocket)
 
     def disconnect_event(self, websocket: WebSocket):
@@ -21,6 +23,7 @@ class ConnectionManager:
 
     async def connect_incident(self, websocket: WebSocket):
         await websocket.accept()
+        self.loop = asyncio.get_running_loop()
         self.incident_connections.append(websocket)
 
     def disconnect_incident(self, websocket: WebSocket):
@@ -38,6 +41,13 @@ class ConnectionManager:
                 to_remove.append(connection)
         for dead in to_remove:
             self.disconnect_event(dead)
+
+    def broadcast_event_sync(self, data: Dict[str, Any]):
+        """Thread-safe dispatch from sync or async contexts."""
+        if not self.event_connections:
+            return
+        if self.loop and self.loop.is_running():
+            asyncio.run_coroutine_threadsafe(self.broadcast_event(data), self.loop)
 
     async def broadcast_incident(self, data: Dict[str, Any]):
         """Broadcast live safety incident alert to all connected incident WebSocket clients."""

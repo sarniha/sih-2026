@@ -15,7 +15,7 @@ export const Layout: React.FC = () => {
         <Sidebar />
 
         {/* Page Viewport Area */}
-        <main className="flex-1 overflow-y-auto bg-[#0b0f17] relative">
+        <main className="flex-1 h-full overflow-hidden bg-[#0b0f17] relative flex flex-col">
           <Outlet />
         </main>
       </div>

@@ -45,6 +45,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!frontend/src/lib/
 lib64/
 parts/
 sdist/
@@ -91,6 +92,7 @@ pnpm-debug.log*
 
 # ── Machine Learning Weights & Large Models ─────────────────────────────────
 *.pt
+!road-defect-detection/weights/best.pt
 *.pth
 *.onnx
 *.engine
@@ -103,7 +105,10 @@ runs/
 # ── Media & Runtime Generated Evidence ──────────────────────────────────────
 backend/static/evidence/
 **/static/evidence/
+road-defect-detection/evidence/
+**/evidence/*.jpg
 *.mp4
+!road-defect-detection/data/synthetic_test.mp4
 *.avi
 *.mkv
 *.mov

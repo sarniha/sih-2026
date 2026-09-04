@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.v1 import events, fleet, health, incidents, traffic, websockets
+from app.api.v1 import events, fleet, health, incidents, traffic, websockets, evidence
 from app.services.evidence_service import ensure_evidence_dir
 
 
@@ -28,6 +28,7 @@ def create_app() -> FastAPI:
     app.include_router(traffic.router, prefix="/api/v1", tags=["traffic"])
     app.include_router(websockets.router, prefix="/api/v1", tags=["websockets"])
     app.include_router(fleet.router, prefix="/api/v1", tags=["fleet"])
+    app.include_router(evidence.router, prefix="/api/v1", tags=["evidence"])
 
     return app
 

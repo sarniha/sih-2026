@@ -1,9 +1,36 @@
 import React, { useMemo } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from "react-leaflet";
 import type { EventResponse } from "../../types/api";
 import { useEvidenceViewer } from "../../contexts/EvidenceViewerContext";
+
+// ---------------------------------------------------------------------------
+// Auto-resize and auto-fit map bounds
+// ---------------------------------------------------------------------------
+function MapController({ events }: { events: EventResponse[] }) {
+  const map = useMap();
+  const hasCenteredRef = React.useRef(false);
+
+  React.useEffect(() => {
+    // Invalidate size ensures tiles and controls render correctly in flex layout
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  React.useEffect(() => {
+    const valid = events.filter((e) => e.lat != null && e.lon != null);
+    if (valid.length > 0 && !hasCenteredRef.current) {
+      hasCenteredRef.current = true;
+      const bounds = L.latLngBounds(valid.map((e) => [e.lat!, e.lon!]));
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    }
+  }, [events, map]);
+
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // Fix default Leaflet icon bug (webpack/vite strips default icon paths)
@@ -90,10 +117,15 @@ export const LiveMap: React.FC<LiveMapProps> = ({ events }) => {
     <MapContainer
       center={DELHI_CENTER}
       zoom={13}
+      scrollWheelZoom={true}
+      doubleClickZoom={true}
+      dragging={true}
+      touchZoom={true}
       zoomControl={false}
-      className="w-full h-full z-0"
-      style={{ background: "#0b0f17" }}
+      className="w-full h-full"
+      style={{ width: "100%", height: "100%", background: "#0b0f17" }}
     >
+      <MapController events={mappableEvents} />
       <ZoomControl position="bottomright" />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'

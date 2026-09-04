@@ -59,6 +59,7 @@ def ingest_event(db: Session, payload: EventCreate) -> EventResponse:
                 "plate_text": data.get("plate_text") or existing.plate_text,
                 "plate_confidence": data.get("plate_confidence") or existing.plate_confidence,
                 "evidence_url": data.get("evidence_url") or existing.evidence_url,
+                "metadata_": data.get("metadata") or existing.metadata_,
             }
             existing = update_event(db, existing, updates)
 
@@ -100,6 +101,7 @@ def ingest_event(db: Session, payload: EventCreate) -> EventResponse:
         plate_text=data.get("plate_text"),
         plate_confidence=data.get("plate_confidence"),
         evidence_url=data.get("evidence_url"),
+        metadata_=data.get("metadata"),
     )
 
     saved = create_event(db, event)
@@ -113,13 +115,10 @@ def ingest_event(db: Session, payload: EventCreate) -> EventResponse:
     response = _event_to_response(saved, fallback_lon=lon, fallback_lat=lat)
 
     try:
-        import asyncio
         from app.services.websocket_manager import ws_manager
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.run_coroutine_threadsafe(ws_manager.broadcast_event(response.model_dump()), loop)
-    except Exception:
-        pass
+        ws_manager.broadcast_event_sync(response.model_dump())
+    except Exception as e:
+        print(f"[WS BROADCAST ERROR] {e}")
 
     return response
 
