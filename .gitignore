@@ -108,5 +108,11 @@ backend/static/evidence/
 *.mkv
 *.mov
 
+# ── ANPR Runtime Output (keep .gitkeep but ignore generated files) ────────────
+anpr-detection/evidence_incidents/*
+!anpr-detection/evidence_incidents/.gitkeep
+anpr-detection/plate_crops/*
+!anpr-detection/plate_crops/.gitkeep
+
 # ── Test Artifacts ──────────────────────────────────────────────────────────
 backend/test_event.json
