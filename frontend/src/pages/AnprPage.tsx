@@ -167,7 +167,7 @@ export const AnprPage: React.FC = () => {
       {/* ── Main Layout: Responsive Grid ───────────────────── */}
       {!isLoading && !error && displayEvents.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayEvents.map((event) => (
+          {displayEvents.map((event: any) => (
             <AnprCard key={event.id} event={event} />
           ))}
         </div>
