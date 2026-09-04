@@ -14,6 +14,10 @@ def draw_detections(frame, detections):
         cv2.putText(frame, f"ID {track_id}", (cx - 10, cy - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
+def is_inside_zone(x, y):
+    x1, y1, x2, y2 = ZONE
+    return x1 <= x <= x2 and y1 <= y <= y2
+
 def main():
     detector = VehicleDetector()
     density_tracker = DensityTracker()
@@ -26,7 +30,6 @@ def main():
     prev_frame_time = time.time()
     frame_count = 0
 
-    # cache last known results so skipped frames still display something sensible
     last_detections = []
     density, avg_speed, avg_confidence, congestion = 0, 0, 0, "Low"
 
@@ -54,9 +57,18 @@ def main():
         cv2.putText(frame, f"FPS: {fps:.1f}",
                     (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
+        # Send one event per vehicle currently in the zone, on the emit interval
         if time.time() - last_emit_time >= EMIT_INTERVAL_SECONDS:
-            event = build_event(density, avg_speed, avg_confidence, congestion)
-            send_event(event)
+            for det in last_detections:
+                if is_inside_zone(det["center_x"], det["center_y"]):
+                    event = build_event(
+                        density=density,
+                        avg_speed=avg_speed,
+                        avg_confidence=det["confidence"],
+                        congestion=congestion,
+                        track_id=det["track_id"]
+                    )
+                    send_event(event)
             last_emit_time = time.time()
 
         cv2.imshow("Traffic Intelligence", frame)

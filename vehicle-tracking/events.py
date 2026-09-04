@@ -1,22 +1,44 @@
 import time
 import requests
-from config import SEND_TO_BACKEND, BACKEND_URL
+from config import BACKEND_URL, SERVICE_TOKEN, BUS_ID, TRIP_ID, SEND_TO_BACKEND
 
-def build_event(density, avg_speed, avg_confidence, congestion):
-    return {
-        "event_type": "traffic_density",
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "confidence": round(avg_confidence, 2),
-        "location": {"lat": None, "lon": None},
-        "vehicle_count": density,
-        "avg_speed_px_per_frame": round(avg_speed, 2),
-        "congestion_level": congestion
+def build_event(density, avg_speed, avg_confidence, congestion, lon=None, lat=None, track_id=None):
+    severity_map = {"Low": "low", "Medium": "medium", "High": "high"}
+
+    event = {
+        "event_type": "traffic",
+        "trip_id": TRIP_ID,
+        "bus_id": BUS_ID,
+        "confidence": round(min(max(avg_confidence, 0.0), 1.0), 3),
+        "occurred_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "severity": severity_map.get(congestion, "medium"),
+        "object_id": str(track_id) if track_id is not None else f"traf_density_{int(time.time())}"
     }
+
+    if lon is not None and lat is not None:
+        event["lon"] = lon
+        event["lat"] = lat
+
+    return event
 
 def send_event(event):
     print(event)
-    if SEND_TO_BACKEND:
-        try:
-            requests.post(BACKEND_URL, json=event, timeout=2)
-        except requests.exceptions.RequestException as e:
-            print("Failed to send event:", e)
+    if not SEND_TO_BACKEND:
+        return
+
+    try:
+        resp = requests.post(
+            BACKEND_URL,
+            json=event,
+            headers={
+                "Content-Type": "application/json",
+                "X-Service-Token": SERVICE_TOKEN,
+            },
+            timeout=5,
+        )
+        if resp.status_code == 201:
+            print(f"[OK 201] Event created: id={resp.json()['id']}")
+        else:
+            print(f"[ERR {resp.status_code}] {resp.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"[CONN_ERR] {e}")

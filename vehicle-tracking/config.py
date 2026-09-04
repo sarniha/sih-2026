@@ -1,28 +1,38 @@
+import os
+
 # Model
-MODEL_PATH = "yolov8s.pt"        # was yolov8n.pt — better accuracy, especially for small/fast objects
-TRACKER_CONFIG = "bytetrack.yaml"   # back to default
+MODEL_PATH = "yolov8s.pt"
+TRACKER_CONFIG = "bytetrack.yaml"
 
 # Vehicle classes (COCO IDs): car, motorcycle, bus, truck
 VEHICLE_CLASSES = [2, 3, 5, 7]
 
-# Zone of interest (x1, y1, x2, y2) — retune per video resolution/angle
-ZONE = (600, 50, 1250, 450)
+# Detection tuning
+CONFIDENCE_THRESHOLD = 0.15
+INPUT_SIZE = 960
 
-# Congestion thresholds
+# Zone of interest (x1, y1, x2, y2) — retune per video resolution/angle
+ZONE = (0, 150, 1250, 700)
+
+# Congestion thresholds — retuned against real test footage
 DENSITY_LOW_MAX = 6
 DENSITY_MEDIUM_MAX = 12
-SPEED_JAM_THRESHOLD = 20
+SPEED_JAM_THRESHOLD = 20  # px/second
 
-CONFIDENCE_THRESHOLD = 0.15       # was YOLO's default 0.25 — lets borderline bike detections through
-INPUT_SIZE = 960                  # was default 640 — more pixels for small/distant objects
-PROCESS_EVERY_N_FRAMES = 2      # process every 2nd frame; try 3 if still too slow
+# Performance
+PROCESS_EVERY_N_FRAMES = 2
 
 # Event emission
 EMIT_INTERVAL_SECONDS = 5
 
-# Backend (set to True once P4's endpoint is live)
-SEND_TO_BACKEND = False
-BACKEND_URL = "http://localhost:8000/events"
+# Backend integration
+SEND_TO_BACKEND = True
+BACKEND_URL = "http://localhost:8000/api/v1/events"
+SERVICE_TOKEN = os.environ.get("SERVICE_TOKEN", "")  # set via: $env:SERVICE_TOKEN = "..."
+
+# Real bus/trip UUIDs from Supabase (seeded test data)
+BUS_ID = "4af85ce8-b9b9-4a7c-963d-a5eaceb5e236"
+TRIP_ID = "004b1d9f-d0b8-471d-9f5d-c14a404a4c5a"
 
 # Video source
 VIDEO_PATH = "traffic.mp4"
