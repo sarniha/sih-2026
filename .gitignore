@@ -1,0 +1,29 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+
+# Virtual environment
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs / local DB files
+*.log
+*.db
+*.sqlite3
+
+# OS junk
+.DS_Store
+Thumbs.db
