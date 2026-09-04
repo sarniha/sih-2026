@@ -14,14 +14,14 @@ export const MapPage: React.FC = () => {
   }, [status, setStatus]);
 
   return (
-    <div className="flex flex-col lg:flex-row h-full overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full w-full overflow-hidden flex-1">
       {/* Left: Live Map (grows to fill) */}
-      <div className="flex-grow relative min-h-[300px]">
+      <div className="flex-1 h-full w-full relative min-h-[300px]">
         <LiveMap events={events} />
 
         {/* Floating connection status badge on map */}
-        <div className="absolute top-3 left-3 z-[1000]">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0f172a]/90 backdrop-blur border border-[#1e293b] shadow-lg">
+        <div className="absolute top-3 left-3 z-[1000] pointer-events-none">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0f172a]/90 backdrop-blur border border-[#1e293b] shadow-lg pointer-events-auto">
             <span
               className={`h-2 w-2 rounded-full ${
                 status === "connected"

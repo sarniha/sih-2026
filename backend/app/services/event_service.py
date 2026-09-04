@@ -115,13 +115,10 @@ def ingest_event(db: Session, payload: EventCreate) -> EventResponse:
     response = _event_to_response(saved, fallback_lon=lon, fallback_lat=lat)
 
     try:
-        import asyncio
         from app.services.websocket_manager import ws_manager
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.run_coroutine_threadsafe(ws_manager.broadcast_event(response.model_dump()), loop)
-    except Exception:
-        pass
+        ws_manager.broadcast_event_sync(response.model_dump())
+    except Exception as e:
+        print(f"[WS BROADCAST ERROR] {e}")
 
     return response
 
