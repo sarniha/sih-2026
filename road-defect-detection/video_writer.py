@@ -27,7 +27,7 @@ class AnnotatedVideoWriter:
         self._fps_display = 0.0
         self._frame_count = 0
 
-    def draw_and_write(
+    def annotate_frame(
         self,
         frame,
         active_tracks: list,
@@ -35,7 +35,7 @@ class AnnotatedVideoWriter:
         gps_loc: dict | None,
         frame_num: int,
     ):
-        """Annotate frame with tracks + HUD, then write to output video."""
+        """Annotate frame with tracks + HUD, returns annotated copy."""
         img = frame.copy()
         h, w = img.shape[:2]
 
@@ -103,7 +103,19 @@ class AnnotatedVideoWriter:
             cv2.putText(img, text, (12, y_offset), FONT, scale, col, FONT_THICK, cv2.LINE_AA)
             y_offset += 22
 
+        return img
+
+    def draw_and_write(
+        self,
+        frame,
+        active_tracks: list,
+        confirmed_count: int,
+        gps_loc: dict | None,
+        frame_num: int,
+    ):
+        img = self.annotate_frame(frame, active_tracks, confirmed_count, gps_loc, frame_num)
         self._writer.write(img)
+        return img
 
     def release(self):
         self._writer.release()

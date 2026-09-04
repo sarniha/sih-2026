@@ -37,6 +37,7 @@ def run_pipeline(
     outvid: str = None,
     outjson: str = None,
     send_backend: bool = SEND_TO_BACKEND,
+    show: bool = False,
 ):
     print("=========================================================")
     print("  🚌 SmartBus Urban Sensing — Road Defect Detection  ")
@@ -47,6 +48,7 @@ def run_pipeline(
     print(f"  Confidence   : {conf}")
     print(f"  Min Confirm  : {min_hits} frames")
     print(f"  Send Backend : {send_backend}")
+    print(f"  Live Display : {show}")
     print("---------------------------------------------------------")
 
     cap = cv2.VideoCapture(int(video_path) if video_path.isdigit() else video_path)
@@ -64,6 +66,8 @@ def run_pipeline(
     if outvid:
         writer = AnnotatedVideoWriter(outvid, fps, width, height)
         print(f"  Recording HUD output video to: {outvid}")
+
+    visualizer = AnnotatedVideoWriter("/dev/null", fps, width, height) if show and not writer else None
 
     detector = RoadDefectDetector(
         model_path=model_path,
@@ -112,14 +116,29 @@ def run_pipeline(
                 if send_backend:
                     send_defect_event(event)
 
+            annotated_img = None
             if writer:
-                writer.draw_and_write(
+                annotated_img = writer.draw_and_write(
                     frame=frame,
                     active_tracks=active_detections,
                     confirmed_count=len(confirmed_events),
                     gps_loc=gps_loc,
                     frame_num=frame_num,
                 )
+            elif visualizer:
+                annotated_img = visualizer.annotate_frame(
+                    frame=frame,
+                    active_tracks=active_detections,
+                    confirmed_count=len(confirmed_events),
+                    gps_loc=gps_loc,
+                    frame_num=frame_num,
+                )
+
+            if show and annotated_img is not None:
+                cv2.imshow("SmartBus - Road Defect Sensing HUD", annotated_img)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    print("\n🛑 Stopped by operator (pressed 'q').")
+                    break
 
             frame_num += 1
             if frame_num % 50 == 0:
@@ -132,6 +151,8 @@ def run_pipeline(
         cap.release()
         if writer:
             writer.release()
+        if show:
+            cv2.destroyAllWindows()
 
     total_time = time.time() - t_start
     print("---------------------------------------------------------")
@@ -156,6 +177,7 @@ if __name__ == "__main__":
     parser.add_argument("--outvid", default=None, help="Output annotated video path")
     parser.add_argument("--out", default=None, help="Output events JSON path")
     parser.add_argument("--send-backend", action="store_true", default=SEND_TO_BACKEND, help="Emit events to backend")
+    parser.add_argument("--show", action="store_true", help="Display interactive live window")
     args = parser.parse_args()
 
     run_pipeline(
@@ -167,4 +189,5 @@ if __name__ == "__main__":
         outvid=args.outvid,
         outjson=args.out,
         send_backend=args.send_backend,
+        show=args.show,
     )
